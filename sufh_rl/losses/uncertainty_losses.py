@@ -45,14 +45,11 @@ def gaussian_blur_2d(x: torch.Tensor, sigma: float) -> torch.Tensor:
 
 def make_multiclass_boundary(labels: torch.Tensor, ignore_index: int = 255) -> torch.Tensor:
     """
-    从多类标签构造 semantic boundary
+    semantic boundary
 
     labels: [B, H, W], int64
     return: boundary [B, 1, H, W], bool
 
-    规则：
-    - 如果相邻像素类别不同，则两侧都视为 boundary
-    - ignore 区域不参与 boundary 构造
     """
     assert labels.dim() == 3, f"labels should be [B,H,W], got {labels.shape}"
 
@@ -61,7 +58,7 @@ def make_multiclass_boundary(labels: torch.Tensor, ignore_index: int = 255) -> t
 
     boundary = torch.zeros((b, h, w), dtype=torch.bool, device=labels.device)
 
-    # 左右相邻比较
+
     diff_lr = (
         valid[:, :, :-1] &
         valid[:, :, 1:] &
@@ -70,7 +67,7 @@ def make_multiclass_boundary(labels: torch.Tensor, ignore_index: int = 255) -> t
     boundary[:, :, :-1] |= diff_lr
     boundary[:, :, 1:] |= diff_lr
 
-    # 上下相邻比较
+
     diff_ud = (
         valid[:, :-1, :] &
         valid[:, 1:, :] &
@@ -84,19 +81,10 @@ def make_multiclass_boundary(labels: torch.Tensor, ignore_index: int = 255) -> t
 
 class LocalAlignmentLossMapMultiClass(nn.Module):
     """
-    直接对 uncertainty map 做多类 local alignment
-
-    核心：
         prob = softmax(seg_logits)
-        p_y  = GT 类别对应概率
+        p_y  = GT 
         pseudo_error = 1 - p_y
-
-    然后做多尺度局部对齐：
         loss = sum_w mean(|G_sigma(U) - G_sigma(pseudo_error)|)
-
-    注意：
-    - 对 p_y 做 detach，避免 uncertainty loss 直接反推 segmentation head
-    - unc_map 已经在 [0,1]，不再对它做 sigmoid
     """
 
     def __init__(
@@ -157,20 +145,6 @@ class LocalAlignmentLossMapMultiClass(nn.Module):
 
 
 class BoundaryConcentrationLossMapMultiClass(nn.Module):
-    """
-    直接对 uncertainty map 做多类 boundary concentration loss
-
-    多类版本边界：
-    - 只要相邻像素类别不同，就算 semantic boundary
-    - 再做 dilation 得到 boundary band
-
-    loss:
-        relu(margin - (mean_band - mean_nonband))
-
-    目标：
-    - band 内 uncertainty 高
-    - non-band 内 uncertainty 低
-    """
 
     def __init__(
         self,
@@ -243,7 +217,7 @@ class BoundaryConcentrationLossMapMultiClass(nn.Module):
 
 
 if __name__ == "__main__":
-    # 简单自检
+
     b, c, h, w = 2, 6, 256, 256
 
     seg_logits = torch.randn(b, c, h, w)
