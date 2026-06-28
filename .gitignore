@@ -1,0 +1,30 @@
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+.cache/
+.DS_Store
+
+# data and outputs
+data/
+datasets_raw/
+outputs/
+outputs_revision/
+logs/
+wandb/
+checkpoints/
+
+# large binaries
+*.pth
+*.pt
+*.ckpt
+*.pkl
+*.npz
+*.npy
+*.tif
+*.tiff
+*.mp4
+
+# temporary files
+.Trash-0/
+*.tmp
