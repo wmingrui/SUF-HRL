@@ -154,15 +154,6 @@ Manuscript figures and selected qualitative visualizations can be placed in `doc
 
 ## Notes
 
-This public version is a cleaned research-code release. It keeps the main SUF-HRL implementation, training logic, evaluation metrics, and dataset interfaces, while removing local AutoDL paths, temporary experiment logs, checkpoints, and raw data.
+This public version is a cleaned research-code release. It keeps the main SUF-HRL implementation, training logic, evaluation metrics, and dataset interfaces.
 
-## Citation
 
-```bibtex
-@article{wang2026sufhrl,
-  title={Spatially-Aware Uncertainty Feedback for Hard-Region Learning in Remote Sensing Semantic Segmentation},
-  author={Wang, Mingrui and Yang, Ronghua and Fan, Hongchao and Wu, Hao and Li, Jiarui},
-  journal={IEEE Geoscience and Remote Sensing Letters},
-  year={2026}
-}
-```
