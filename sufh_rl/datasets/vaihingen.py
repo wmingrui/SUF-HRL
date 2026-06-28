@@ -104,7 +104,7 @@ class VaihingenMulticlassDataset(Dataset):
 
 
 if __name__ == "__main__":
-    # 简单自检
+
     DATA_ROOT = Path("/root/autodl-tmp/data/vaihingen")
     ds = VaihingenMulticlassDataset(
         image_dir=str(DATA_ROOT / "processed_multiclass/images"),
