@@ -1,0 +1,39 @@
+method: suf_hrl
+seed: 0
+output_dir: outputs/potsdam_suf_hrl
+
+dataset:
+  name: potsdam
+  root: /path/to/potsdam
+  image_dir: processed_multiclass/images
+  label_dir: processed_multiclass/labels
+  num_classes: 6
+  ignore_index: 255
+  crop_size: 512
+
+model:
+  backbone: nvidia/mit-b2
+  fuse_dim: 256
+  residual_scale: 0.15
+  pretrained: true
+
+training:
+  epochs: 100
+  batch_size: 16
+  val_batch_size: 4
+  num_workers: 4
+  lr: 6.0e-5
+  weight_decay: 0.01
+  amp: true
+  topk_warmup_epochs: 5
+
+loss:
+  lambda_dice: 1.0
+  lambda_local: 0.10
+  lambda_boundary: 0.05
+  lambda_hard: 0.40
+  topk_ratio: 0.05
+  local_sigmas: [1.0, 3.0, 5.0]
+  local_weights: [0.5, 0.3, 0.2]
+  boundary_width: 3
+  boundary_margin: 0.18
