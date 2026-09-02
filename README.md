@@ -7,7 +7,7 @@ SUF-HRL turns prediction uncertainty from a post-hoc reliability indicator into 
 ## Overview
 
 <p align="center">
-  <img src="docs/figures/suf_hrl_framework.png" width="96%" alt="SUF-HRL framework">
+  <img src="docs/figures/fig1_framework.png" width="96%" alt="SUF-HRL framework">
 </p>
 
 <p align="center">
@@ -34,7 +34,7 @@ The learned uncertainty is not only used as a reliability indicator, but also se
 ## Spatial uncertainty indicators
 
 <p align="center">
-  <img src="docs/figures/spatial_uncertainty_indicators.png" width="96%" alt="Spatial uncertainty indicators: BFUR, DSCG, and MSAD">
+  <img src="docs/figures/FIG2_method_explanation.png" width="96%" alt="Spatial uncertainty indicators: BFUR, DSCG, and MSAD">
 </p>
 
 <p align="center">
