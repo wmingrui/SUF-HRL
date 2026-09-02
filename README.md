@@ -1,284 +1,235 @@
 # SUF-HRL
 
-Official implementation of **Spatially-Aware Uncertainty Feedback for
-Hard-Region Learning in Remote Sensing Semantic Segmentation**.
+Official implementation of **Spatially-Aware Uncertainty Feedback for Hard-Region Learning in Remote Sensing Semantic Segmentation**.
 
-SUF-HRL turns prediction uncertainty from a post-hoc reliability
-indicator into a **spatial feedback signal** for hard-region learning.
-Instead of selecting isolated pixels only by loss or raw confidence,
-SUF-HRL learns a spatially structured uncertainty map and uses it to
-guide additional supervision around boundary-adjacent and error-prone
-regions.
-
-------------------------------------------------------------------------
+SUF-HRL turns prediction uncertainty from a post-hoc reliability indicator into a **spatial feedback signal** for hard-region learning. Instead of selecting isolated pixels only by loss or raw confidence, SUF-HRL learns a spatially structured uncertainty map and uses it to guide additional supervision around boundary-adjacent and error-prone regions.
 
 ## Overview
 
-SUF-HRL is designed for high-resolution remote sensing semantic
-segmentation, where errors are often concentrated in structured hard
-regions, such as:
+<p align="center">
+  <img src="docs/figures/suf_hrl_framework.png" width="96%" alt="SUF-HRL framework">
+</p>
 
--   object boundaries,
--   small objects,
--   shadow regions,
--   ambiguous land-cover transitions.
+<p align="center">
+  <b>Fig. 1.</b> Overview of SUF-HRL. A SegFormer-B2 backbone produces fused decoder features and segmentation probabilities. An MSP-based uncertainty prior is refined by a residual uncertainty branch. The learned uncertainty map is regularized by spatial uncertainty objectives and then used to select top-k hard regions for additional supervision.
+</p>
 
-The framework contains:
+SUF-HRL is designed for high-resolution remote sensing semantic segmentation, where errors are often concentrated in structured hard regions, such as:
 
-1.  **SegFormer-B2 segmentation baseline**
-2.  **MSP uncertainty prior**
-3.  **Residual uncertainty refinement branch**
-4.  **Spatial uncertainty objectives**
-5.  **Uncertainty-guided top-k hard-region supervision**
+- **Object boundaries** — edges between adjacent land-cover classes
+- **Small objects** — vehicles, individual tree crowns, and thin linear structures
+- **Shadow regions** — areas with ambiguous illumination and texture
+- **Ambiguous land-cover transitions** — gradients between spectrally similar classes
 
-The learned uncertainty is not only used as a reliability indicator, but
-also serves as a feedback signal for improving difficult regions.
+The core pipeline contains five components:
 
-------------------------------------------------------------------------
+1. **SegFormer-B2 segmentation baseline** for remote sensing semantic segmentation.
+2. **MSP uncertainty prior** from the predicted probability distribution.
+3. **Residual uncertainty refinement** using decoder features to produce a learned spatial uncertainty map.
+4. **Spatial uncertainty objectives** that encourage local error alignment and boundary concentration.
+5. **Uncertainty-guided top-k hard-region supervision** for boundary-adjacent, small-object, and transition regions.
 
-## Framework
-
-The main pipeline:
-
-    Input Image
-         |
-         v
-    SegFormer Encoder
-         |
-         v
-    Multi-scale Decoder
-         |
-         +----------------+
-         |                |
-     Segmentation     Residual
-     Prediction       Uncertainty
-         |                |
-         +-------+--------+
-                 |
-         Spatial Uncertainty Map
-                 |
-          Hard-region Selection
-                 |
-            SUF-HRL Loss
-
-------------------------------------------------------------------------
+The learned uncertainty is not only used as a reliability indicator, but also serves as a feedback signal for improving difficult regions.
 
 ## Spatial uncertainty indicators
 
-SUF-HRL evaluates uncertainty quality using both conventional
-uncertainty metrics and spatially-aware indicators.
+<p align="center">
+  <img src="docs/figures/spatial_uncertainty_indicators.png" width="96%" alt="Spatial uncertainty indicators: BFUR, DSCG, and MSAD">
+</p>
 
-The three spatial uncertainty indicators are:
+<p align="center">
+  <b>Fig. 2.</b> Illustration of the spatial uncertainty indicators used to evaluate whether uncertainty is not only high on wrong pixels, but also spatially organized around remote-sensing hard regions.
+</p>
 
--   **BFUR (Boundary-Focused Uncertainty Ratio)**\
-    Measures uncertainty concentration inside boundary regions. Higher
-    values indicate stronger boundary awareness.
+SUF-HRL evaluates uncertainty quality using both conventional error-detection and calibration metrics, plus three spatially-aware indicators:
 
--   **DSCG (Distance-Stratified Calibration Gap)**\
-    Measures whether uncertainty follows the prediction difficulty
-    variation at different distances from object boundaries. Lower
-    values indicate better spatial calibration.
+- **BFUR (Boundary-Focused Uncertainty Ratio)** measures how much uncertainty is concentrated inside the ground-truth boundary band compared with non-boundary regions. A higher value indicates that uncertainty is more boundary-aware.
+- **DSCG (Distance-Stratified Calibration Gap)** compares the mean uncertainty and mean error across distance bands from object boundaries. A lower value means that uncertainty better follows boundary-distance-dependent prediction difficulty.
+- **MSAD (Multi-Scale Local Alignment Distance)** compares Gaussian-smoothed uncertainty and error maps at multiple spatial scales. A lower value indicates better local alignment between uncertainty and actual error regions.
 
--   **MSAD (Multi-Scale Local Alignment Distance)**\
-    Measures local alignment between uncertainty maps and error
-    distributions across multiple spatial scales. Lower values indicate
-    better uncertainty-error alignment.
+These indicators are especially useful for high-resolution remote sensing scenes, where errors often appear around dense urban boundaries, thin roads, tree crowns, small vehicles, shadows, and land-cover transitions.
 
-------------------------------------------------------------------------
+## Repository structure
 
-# Repository Structure
-
-    SUF-HRL/
-
-    ├── configs/                  # Dataset configurations
-    ├── sufh_rl/                  # Core implementation
-    │   ├── models/               # SegFormer baseline and SUF-HRL model
-    │   ├── losses/               # Segmentation and uncertainty losses
-    │   ├── datasets/             # Dataset interfaces
-    │   ├── metrics/              # Evaluation metrics
-    │   └── utils/                # Utilities
-    ├── tools/                    # Training, evaluation and visualization
-    ├── scripts/                  # Training scripts
-    ├── docs/                     # Dataset preparation and documentation
-    ├── tests/                    # Repository verification tests
-    └── requirements.txt
-
-------------------------------------------------------------------------
-
-# Installation
-
-Example environment:
-
-    conda create -n sufhrl python=3.10 -y
-    conda activate sufhrl
-    pip install -r requirements.txt
-
-The implementation uses HuggingFace SegFormer with the `nvidia/mit-b2`
-backbone.
-
-------------------------------------------------------------------------
-
-# Dataset Preparation
-
-The code expects datasets in the following format:
-
-    dataset/
-    ├── processed_multiclass/
-    │   ├── images/
-    │   └── labels/
-    └── splits/
-        ├── train.txt
-        ├── val.txt
-        └── test.txt
-
-Each split file contains one sample identifier per line.
-
-More details:
-
-    docs/dataset_preparation.md
-
-------------------------------------------------------------------------
-
-# Training
-
-Example:
-
-``` bash
-python tools/train.py \
---config configs/potsdam.yaml \
---method suf_hrl
+```text
+SUF-HRL/
+├── configs/                  # Dataset configs and MMSegmentation baseline configs
+├── sufh_rl/                  # Core package
+│   ├── models/               # SegFormer baseline and SUF-HRL model
+│   ├── losses/               # Dice, focal, top-k, local, and boundary losses
+│   ├── datasets/             # Potsdam, Vaihingen, and LoveDA dataloaders
+│   ├── metrics/              # mIoU, boundary mIoU, BFUR, DSCG, MSAD
+│   └── utils/                # Config and reproducibility helpers
+├── tools/                    # Training, evaluation, and visualization entry points
+├── scripts/                  # Example shell commands
+├── docs/                     # Dataset preparation and figure notes
+└── tests/                    # Repository verification tests
 ```
 
-Provided scripts:
+## Installation
 
-``` bash
+```bash
+conda create -n sufhrl python=3.10 -y
+conda activate sufhrl
+pip install -r requirements.txt
+```
+
+This code uses HuggingFace SegFormer. The paper experiments use `nvidia/mit-b2`.
+
+## Dataset preparation
+
+The code expects each dataset to be converted into the following layout:
+
+```text
+/path/to/dataset/
+├── processed_multiclass/
+│   ├── images/
+│   │   ├── sample_0001.png
+│   │   └── ...
+│   └── labels/
+│       ├── sample_0001.png
+│       └── ...
+└── splits/
+    ├── train.txt
+    ├── val.txt
+    └── test.txt
+```
+
+Each split file contains one sample id per line, without file extension.
+
+More details are provided in [`docs/dataset_preparation.md`](docs/dataset_preparation.md).
+
+## Training
+
+Edit the dataset root in a config file, for example `configs/potsdam.yaml`, and run:
+
+```bash
+python tools/train.py --config configs/potsdam.yaml --method suf_hrl
+```
+
+Other supported method flags include:
+
+```text
+baseline, focal, ohem, loss_topk, msp_topk, entropy_topk, suf_hrl
+```
+
+Example scripts are provided in `scripts/`:
+
+```bash
 bash scripts/train_potsdam.sh
 bash scripts/train_vaihingen.sh
 bash scripts/train_loveda.sh
 ```
 
-------------------------------------------------------------------------
+## Evaluation
 
-# Evaluation
+After downloading the checkpoints, run the evaluation for each dataset.
 
-After downloading checkpoints, run:
+### Potsdam
 
-## Potsdam
-
-``` bash
+```bash
 PYTHONPATH=. \
 TRANSFORMERS_OFFLINE=1 \
 HF_HUB_OFFLINE=1 \
 python tools/eval_potsdam.py \
---checkpoint checkpoints/potsdam_sufhrl_b2.pth
+  --checkpoint checkpoints/potsdam_sufhrl_b2.pth
 ```
 
-## Vaihingen
+### Vaihingen
 
-``` bash
+```bash
 PYTHONPATH=. \
 TRANSFORMERS_OFFLINE=1 \
 HF_HUB_OFFLINE=1 \
 python tools/eval_vaihingen.py \
---checkpoint checkpoints/vaihingen_sufhrl_b2.pth
+  --checkpoint checkpoints/vaihingen_sufhrl_b2.pth
 ```
 
-## LoveDA
+### LoveDA
 
-``` bash
+```bash
 PYTHONPATH=. \
 TRANSFORMERS_OFFLINE=1 \
 HF_HUB_OFFLINE=1 \
 python tools/eval_loveda.py \
---checkpoint checkpoints/loveda_sufhrl_b2.pth
+  --checkpoint checkpoints/loveda_sufhrl_b2.pth
 ```
 
-------------------------------------------------------------------------
+## Table III spatial uncertainty evaluation
 
-# Table III Spatial Uncertainty Evaluation
+Table III evaluates uncertainty quality with the following metrics:
 
-Table III evaluates:
-
--   Error AUROC
--   Error AUPR
--   UCE
--   BFUR
--   DSCG
--   MSAD
+- Error AUROC
+- Error AUPR
+- UCE
+- BFUR
+- DSCG
+- MSAD
 
 Run:
 
-``` bash
+```bash
 python tools/tableIII/tableIII_spatial_uncertainty_eval.py
 ```
 
-Required checkpoints:
+Required checkpoints (place them in `checkpoints/tableIII/`):
 
-    checkpoints/tableIII/
+```text
+checkpoints/tableIII/
+├── vaihingen_baseline_seed0_tableIII.pth
+└── vaihingen_sufhrl_seed0_tableIII.pth
+```
 
-    ├── vaihingen_baseline_seed0_tableIII.pth
-    └── vaihingen_sufhrl_seed0_tableIII.pth
-
-------------------------------------------------------------------------
-
-# Qualitative Visualization
+## Qualitative visualization
 
 Generate qualitative comparison figures:
 
-``` bash
+```bash
 PYTHONPATH=. \
 python tools/make_qualitative_comparison.py \
---dataset potsdam \
---checkpoint checkpoints/potsdam_sufhrl_b2.pth \
---split test \
---num-cases 4 \
---output-dir results/qualitative
+  --dataset potsdam \
+  --checkpoint checkpoints/potsdam_sufhrl_b2.pth \
+  --split test \
+  --num-cases 4 \
+  --output-dir results/qualitative
 ```
 
-------------------------------------------------------------------------
+## Pretrained checkpoints
 
-# Pretrained Checkpoints
+Large model weights are provided separately and are not included in this repository. Download them from the links below and place them under `checkpoints/`.
 
-Large model weights are provided separately and are not included in this
-repository.
+### Main B2 models
 
-Available checkpoints:
+| Model | Checkpoint file | Download |
+| --- | --- | --- |
+| Potsdam SUF-HRL | `potsdam_sufhrl_b2.pth` | [Google Drive](https://drive.google.com/file/d/1IQNtyWzrsQlyIDxjzWaiQoVOJadTmYu4/view?usp=sharing) |
+| Vaihingen SUF-HRL | `vaihingen_sufhrl_b2.pth` | [Google Drive](https://drive.google.com/file/d/1BmAAdMgrVWqSJolKQihqSzPWB-mcWJ-3/view?usp=sharing) |
+| LoveDA SUF-HRL | `loveda_sufhrl_b2.pth` | [Google Drive](https://drive.google.com/file/d/1E9Zx6odxZJxDSRShBBag0tLIGD4DRQAQ/view?usp=sharing) |
 
-## Main B2 models
+### Table III models
 
--   Potsdam SUF-HRL
--   Vaihingen SUF-HRL
--   LoveDA SUF-HRL
+| Model | Checkpoint file | Download |
+| --- | --- | --- |
+| Vaihingen baseline | `vaihingen_baseline_seed0_tableIII.pth` | [Google Drive](https://drive.google.com/file/d/1hv-jqp8ylnA0gv6hvYDI3lXC3wltFy4D/view?usp=sharing) |
+| Vaihingen SUF-HRL | `vaihingen_sufhrl_seed0_tableIII.pth` | [Google Drive](https://drive.google.com/file/d/1h5J2SuFCONp9r6SfSkSq97NaNFEwfVvp/view?usp=sharing) |
 
-## Table III models
+### MIT-B5 generalization models
 
--   Vaihingen baseline
--   Vaihingen SUF-HRL
+| Model | Checkpoint file | Download |
+| --- | --- | --- |
+| Potsdam MIT-B5 SUF-HRL | `potsdam_mitb5_sufhrl_b5.pth` | [Google Drive](https://drive.google.com/file/d/11tad9FHeJQ0Fp6z2R0kPbVQuPwxvTzb1/view?usp=sharing) |
+| Vaihingen MIT-B5 SUF-HRL | `vaihingen_mitb5_sufhrl_b5.pth` | [Google Drive](https://drive.google.com/file/d/1kmNyZtFhqO7q3rxzAtLtkRDwbs5CtUy1/view?usp=sharing) |
+| LoveDA MIT-B5 SUF-HRL | `loveda_mitb5_sufhrl_b5.pth` | [Google Drive](https://drive.google.com/file/d/1weYyvhv4ItAXAgmDieTa2JBqBu-JedvY/view?usp=sharing) |
 
-## MIT-B5 generalization models
+## Notes
 
--   Potsdam MIT-B5 SUF-HRL
--   Vaihingen MIT-B5 SUF-HRL
--   LoveDA MIT-B5 SUF-HRL
+This public version is a cleaned research-code release. It keeps:
 
-Checkpoint download links:
+- SUF-HRL model implementation
+- Training pipeline
+- Evaluation scripts
+- Uncertainty metrics
+- Dataset interfaces
+- Visualization tools
 
-(Insert Google Drive / Release links here)
-
-------------------------------------------------------------------------
-
-# Notes
-
-This public version is a cleaned research-code release.
-
-It keeps:
-
--   SUF-HRL model implementation
--   training pipeline
--   evaluation scripts
--   uncertainty metrics
--   dataset interfaces
--   visualization tools
-
-Large datasets, checkpoints, logs, and temporary experiment outputs are
-distributed separately.
+Large datasets, checkpoints, logs, and temporary experiment outputs are distributed separately.
