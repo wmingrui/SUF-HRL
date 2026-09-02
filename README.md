@@ -107,12 +107,6 @@ Edit the dataset root in a config file, for example `configs/potsdam.yaml`, and 
 python tools/train.py --config configs/potsdam.yaml --method suf_hrl
 ```
 
-Other supported method flags include:
-
-```text
-baseline, focal, ohem, loss_topk, msp_topk, entropy_topk, suf_hrl
-```
-
 Example scripts are provided in `scripts/`:
 
 ```bash
