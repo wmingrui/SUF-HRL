@@ -13,30 +13,6 @@ import random
 
 
 class PotsdamMulticlassDataset(Dataset):
-    """
-    Potsdam 多类别语义分割数据集
-
-    读取：
-      - processed_multiclass/images/*.png
-      - processed_multiclass/labels/*.png
-      - splits/train.txt / val.txt / test.txt
-
-    输出：
-      {
-          "image": image,   # torch.float32 [3,H,W]
-          "label": label,   # torch.long   [H,W]
-          "id": sample_id,
-      }
-
-    类别约定（与你的 new_1 一致）：
-      0 -> impervious_surfaces
-      1 -> building
-      2 -> low_vegetation
-      3 -> tree
-      4 -> car
-      5 -> clutter_background
-    """
-
     def __init__(
         self,
         image_dir: str,
@@ -94,7 +70,6 @@ class PotsdamMulticlassDataset(Dataset):
 
         image = Image.open(image_path).convert("RGB")
 
-        # 这里不转 RGB，只保留单通道类别索引图
         label = Image.open(label_path)
         if label.mode != "L":
             label = label.convert("L")
@@ -109,7 +84,6 @@ class PotsdamMulticlassDataset(Dataset):
             return 0, 0, h, w
 
         if w < tw or h < th:
-            # 图太小则后面 resize
             return None
 
         i = random.randint(0, h - th)
@@ -117,15 +91,6 @@ class PotsdamMulticlassDataset(Dataset):
         return i, j, th, tw
 
     def _apply_transforms(self, image: Image.Image, label: Image.Image):
-        """
-        train:
-          - 随机水平翻转
-          - 随机垂直翻转
-          - 随机裁剪（若 crop_size 不为 None）
-        val/test:
-          - 中心裁剪；如果尺寸不足则 resize
-        """
-
         if self.mode == "train":
             if random.random() < 0.5:
                 image = TF.hflip(image)
@@ -191,8 +156,6 @@ class PotsdamMulticlassDataset(Dataset):
 
         # label: [H,W] uint8类别索引 -> torch.long [H,W]
         label = np.array(label, dtype=np.uint8)
-
-        # 安全检查：只允许 0~5 或 ignore_index
         valid_mask = ((label >= 0) & (label < self.num_classes)) | (label == self.ignore_index)
         if not np.all(valid_mask):
             bad_values = np.unique(label[~valid_mask]).tolist()
