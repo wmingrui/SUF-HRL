@@ -34,7 +34,7 @@ The learned uncertainty is not only used as a reliability indicator, but also se
 ## Spatial uncertainty indicators
 
 <p align="center">
-  <img src="docs/figures/FIG2_method_explanation.png" width="96%" alt="Spatial uncertainty indicators: BFUR, DSCG, and MSAD">
+  <img src="docs/figures/method_explanation.png" width="96%" alt="Spatial uncertainty indicators: BFUR, DSCG, and MSAD">
 </p>
 
 <p align="center">
