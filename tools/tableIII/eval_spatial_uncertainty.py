@@ -1,33 +1,3 @@
-# ============================================================
-# new_31_eval_spatial_uncertainty_from_checkpoint.py
-#
-# Purpose:
-#   Evaluate uncertainty quality from checkpoint:
-#
-#   Conventional uncertainty metrics:
-#     1) Error AUROC: higher is better
-#     2) Error AUPR : higher is better
-#     3) UCE        : lower is better
-#
-#   Spatial uncertainty metrics:
-#     1) BFUR: Boundary-Focused Uncertainty Ratio, higher is better
-#     2) DSCG: Distance-Stratified Calibration Gap, lower is better
-#     3) MSAD: Multi-Scale Spatial Alignment Deviation, lower is better
-#
-# Uncertainty sources:
-#   1) MSP     = 1 - max softmax probability
-#   2) Entropy = normalized predictive entropy
-#   3) Learned = uncertainty map returned by residual uncertainty branch
-#
-# Outputs:
-#   save_dir/
-#     spatial_uncertainty_summary.json
-#     spatial_uncertainty_per_image.csv
-#     spatial_uncertainty_table.md
-#
-# Recommended usage:
-#   Paper table: Spatial uncertainty analysis.
-# ============================================================
 
 import argparse
 import csv
@@ -65,10 +35,6 @@ def trapz_compat(y, x):
 
     return float(np.sum((x[1:] - x[:-1]) * (y[1:] + y[:-1]) * 0.5))
 
-
-# ------------------------------------------------------------
-# Arguments
-# ------------------------------------------------------------
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -155,10 +121,6 @@ def parse_args():
     parser.add_argument("--device", type=str, default="cuda")
     return parser.parse_args()
 
-
-# ------------------------------------------------------------
-# Project path / dataset / model utilities
-# ------------------------------------------------------------
 def add_project_paths():
     sys.path.insert(0, "/root/autodl-tmp/scripts_new")
     sys.path.insert(0, "/root/autodl-tmp/script_Vaihingen")
@@ -350,9 +312,6 @@ def get_batch_image_label(batch):
     raise TypeError(f"Unsupported batch type: {type(batch)}")
 
 
-# ------------------------------------------------------------
-# Output extraction
-# ------------------------------------------------------------
 def extract_logits(outputs):
     if isinstance(outputs, dict):
         for k in ["seg_logits", "logits", "out", "pred", "prediction"]:
@@ -404,10 +363,6 @@ def entropy_from_probs(probs, eps=1e-8):
     entropy = entropy / np.log(c)
     return entropy
 
-
-# ------------------------------------------------------------
-# Boundary / mask utilities
-# ------------------------------------------------------------
 def make_valid_mask(label, ignore_index=255, eval_class_ids=None):
     valid = label != ignore_index
 
@@ -448,10 +403,6 @@ def boundary_band_from_valid(label, valid, radius=5):
     band &= valid
     return band
 
-
-# ------------------------------------------------------------
-# Uncertainty preparation
-# ------------------------------------------------------------
 def prepare_uncertainty(u, mode="clip"):
     u = u.astype(np.float32)
 
@@ -470,11 +421,6 @@ def prepare_uncertainty(u, mode="clip"):
 
     raise ValueError(f"Unknown uncertainty normalization mode: {mode}")
 
-
-# ------------------------------------------------------------
-# Conventional uncertainty metrics:
-# Error AUROC / Error AUPR / UCE
-# ------------------------------------------------------------
 def init_traditional_uncertainty_accumulator(num_bins=1000):
     return {
         "num_bins": int(num_bins),
@@ -674,11 +620,6 @@ def finalize_traditional_uncertainty_accumulator(acc):
         "error_rate": error_rate,
     }
 
-
-# ------------------------------------------------------------
-# Spatial uncertainty metrics:
-# BFUR / DSCG / MSAD
-# ------------------------------------------------------------
 def compute_bfur(uncertainty, label, valid, radius=5, unc_norm="clip"):
     """
     BFUR: Boundary-Focused Uncertainty Ratio.
@@ -853,10 +794,6 @@ def compute_spatial_metrics_for_one_map(
         ),
     }
 
-
-# ------------------------------------------------------------
-# Summary / saving
-# ------------------------------------------------------------
 def summarize_spatial_records(records):
     summary = {}
 
@@ -963,10 +900,6 @@ def save_markdown_table(spatial_summary, traditional_summary, md_path):
     md_path.write_text(text, encoding="utf-8")
     return text
 
-
-# ------------------------------------------------------------
-# Main
-# ------------------------------------------------------------
 def main():
     args = parse_args()
     add_project_paths()
