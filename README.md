@@ -215,15 +215,3 @@ Large model weights are provided separately and are not included in this reposit
 | Vaihingen MIT-B5 SUF-HRL | `vaihingen_mitb5_sufhrl_b5.pth` | [Google Drive](https://drive.google.com/file/d/1kmNyZtFhqO7q3rxzAtLtkRDwbs5CtUy1/view?usp=sharing) |
 | LoveDA MIT-B5 SUF-HRL | `loveda_mitb5_sufhrl_b5.pth` | [Google Drive](https://drive.google.com/file/d/1weYyvhv4ItAXAgmDieTa2JBqBu-JedvY/view?usp=sharing) |
 
-## Notes
-
-This public version is a cleaned research-code release. It keeps:
-
-- SUF-HRL model implementation
-- Training pipeline
-- Evaluation scripts
-- Uncertainty metrics
-- Dataset interfaces
-- Visualization tools
-
-Large datasets, checkpoints, logs, and temporary experiment outputs are distributed separately.
